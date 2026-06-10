@@ -483,14 +483,69 @@ function goHome(){ show('scr-home'); }
 
 /* ================== PRACTICE ================== */
 let curEx=null;
+let usedSentences=[];
 function getExList(){ return (EX[S.topic] && EX[S.topic][S.level]) || []; }
-function loadExercise(){
+
+async function generateExercise(){
+  const t=TOPICS.find(t=>t.id===S.topic);
+  const lvDesc={A2:'simple everyday sentences, basic vocabulary',
+                B1:'intermediate, natural everyday phrasing, some phrasal verbs',
+                B2:'advanced, idioms, natural native-like expressions'}[S.level];
+  const avoid=usedSentences.length?`\nDo NOT reuse these sentences: ${usedSentences.slice(-10).join(' | ')}`:'';
+  const prompt=`Create ONE fill-in-the-blank dialogue exercise for a Turkish adult learning English.
+Topic: ${t.en}. Level: ${S.level} (${lvDesc}).
+Format: strict JSON, nothing else:
+{"ctx":"scene description in Turkish (1 short sentence)",
+"them":"what the other person says in English",
+"you":"the user's reply in English with 3-4 blanks marked as ___",
+"answers":["word1","word2","word3"],
+"extra":["distractor1","distractor2","distractor3"],
+"tr":"Turkish translation of the complete user reply"}
+Rules: answers array must match blanks in order, one word per blank. Distractors must be plausible but wrong. Adult, realistic conversation — not childish.${avoid}`;
+  const res=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':S.apiKey,
+      'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:500,
+      messages:[{role:'user',content:prompt}]})});
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  const data=await res.json();
+  let txt=data.content[0].text.trim();
+  txt=txt.replace(/^```json?\s*/i,'').replace(/```$/,'').trim();
+  const j=JSON.parse(txt);
+  usedSentences.push(j.you);
+  return {ctx:j.ctx, lines:[{w:'them',t:j.them},{w:'you',t:j.you}],
+          answers:j.answers, extra:j.extra, tr:j.tr};
+}
+
+async function loadExercise(){
   const list=getExList();
-  if(!list.length){ alert('Bu konu/seviye için egzersiz yakında!'); goHome(); return; }
+  // API key varsa: HER ZAMAN yeni egzersiz üret (dahililer sadece çevrimdışı yedek)
+  if(S.apiKey){
+    document.getElementById('pProgress').textContent='✨ Yeni egzersiz üretiliyor...';
+    document.getElementById('pContext').textContent='Lütfen bekle...';
+    document.getElementById('pDialog').innerHTML='';
+    document.getElementById('pPool').innerHTML='';
+    document.getElementById('pFeedback').classList.remove('show');
+    document.getElementById('pNext').style.display='none';
+    try{
+      curEx=await generateExercise();
+      renderExercise('∞ AI üretimi');
+      return;
+    }catch(e){
+      // İnternet yok / hata → dahili egzersize düş
+      if(!list.length){ alert('Üretim hatası: '+e.message); goHome(); return; }
+    }
+  }
+  if(!list.length){ alert('Bu konu/seviye için API key gerekli (⚙️ ayarlar).'); goHome(); return; }
   if(S.exIndex>=list.length) S.exIndex=0;
   curEx=list[S.exIndex];
+  renderExercise(`${S.exIndex+1}/${list.length}`);
+}
+
+function renderExercise(progressLabel){
   document.getElementById('pProgress').textContent=
-    `${TOPICS.find(t=>t.id===S.topic).en} · ${S.level} · ${S.exIndex+1}/${list.length}`;
+    `${TOPICS.find(t=>t.id===S.topic).en} · ${S.level} · ${progressLabel}`;
   document.getElementById('pContext').textContent=curEx.ctx;
   document.getElementById('pFeedback').classList.remove('show');
   document.getElementById('pNext').style.display='none';
@@ -532,13 +587,15 @@ function win(){
   document.getElementById('pFeedback').classList.add('show');
   document.getElementById('pNext').style.display='block';
 }
-function resetExercise(){ loadExercise(); }
+function resetExercise(){
+  if(curEx) renderExercise(S.apiKey?'∞ AI üretimi':`${S.exIndex+1}/${getExList().length}`);
+}
 function nextExercise(){
   S.exIndex++;
   const list=getExList();
-  if(S.exIndex>=list.length){
+  if(S.exIndex>=list.length && !S.apiKey){
     S.exIndex=0;
-    alert('🎉 Bu konunun tüm egzersizlerini bitirdin! Baştan başlıyor.');
+    alert('🎉 Dahili egzersizler bitti! API key girersen (⚙️) sonsuz yeni egzersiz üretilir.');
   }
   loadExercise();
 }
