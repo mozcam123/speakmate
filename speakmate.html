@@ -119,7 +119,7 @@ h1 .dot{color:var(--accent)}
   <div class="topbar">
     <div>
       <h1>SpeakMate<span class="dot">.</span></h1>
-      <div class="sub">İngilizce konuşma pratiği</div>
+      <div class="sub">İngilizce konuşma pratiği · <b style="color:var(--accent)">v3</b></div>
     </div>
     <button class="iconbtn" onclick="openSettings()">⚙️</button>
   </div>
@@ -183,6 +183,8 @@ h1 .dot{color:var(--accent)}
     <div class="label" style="margin-top:0">Anthropic API Key</div>
     <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-...">
     <div class="hint">Conversation modu için gerekli. Key sadece bu cihazda saklanır, hiçbir yere gönderilmez (Anthropic hariç).</div>
+    <button class="btn ghost" style="width:100%;margin-bottom:6px" onclick="testKey()">🔑 Key'i Test Et</button>
+    <div class="hint" id="keyTestResult" style="font-weight:700"></div>
     <div class="toggle-row">
       <div><b>💡 Hata düzeltme notları</b><div class="hint" style="margin:0">Her mesajından sonra kısa düzeltme önerisi</div></div>
       <div class="switch on" id="corrSwitch" onclick="toggleCorr()"></div>
@@ -712,6 +714,32 @@ function saveSettings(){
   store('key',S.apiKey); store('corr',S.corrections?'on':'off');
   closeSettings();
   if(S.mode==='chat'&&document.getElementById('scr-chat').classList.contains('active')) startChat();
+}
+async function testKey(){
+  const r=document.getElementById('keyTestResult');
+  const key=document.getElementById('apiKeyInput').value.trim();
+  if(!key){ r.textContent='✗ Key boş — önce yapıştır.'; r.style.color='var(--red)'; return; }
+  r.textContent='⏳ Test ediliyor...'; r.style.color='var(--ink-dim)';
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,
+        'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:10,
+        messages:[{role:'user',content:'Say OK'}]})});
+    if(res.ok){
+      r.textContent='✓ Key çalışıyor! Kaydet\'e basmayı unutma.'; r.style.color='var(--teal)';
+    }else{
+      const err=await res.json().catch(()=>({}));
+      const msg=err.error?.message||('HTTP '+res.status);
+      if(res.status===401) r.textContent='✗ Key geçersiz veya iptal edilmiş.';
+      else if(res.status===400&&/credit/i.test(msg)) r.textContent='✗ Key doğru ama kredi yok — console.anthropic.com\'dan bakiye yükle.';
+      else r.textContent='✗ Hata: '+msg;
+      r.style.color='var(--red)';
+    }
+  }catch(e){
+    r.textContent='✗ Bağlantı hatası: '+e.message; r.style.color='var(--red)';
+  }
 }
 
 renderTopics();
