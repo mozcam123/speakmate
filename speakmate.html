@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>SpeakMate — English Practice</title>
+<style>
+:root{
+  --bg:#15171F; --bg2:#1C1F2A; --card:#222633; --card2:#2A2F3F;
+  --ink:#EDEAE3; --ink-dim:#9CA0AE; --line:#343A4C;
+  --accent:#F0915F; --accent-soft:#3A2B22;
+  --teal:#5FB8A8; --teal-soft:#1F3330;
+  --red:#E06A6A; --red-soft:#3A2426;
+  --radius:16px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  font-size:16px; line-height:1.5;
+  padding-bottom:env(safe-area-inset-bottom);
+  overscroll-behavior:none;
+}
+.screen{display:none;min-height:100vh;padding:20px 18px 40px;max-width:560px;margin:0 auto}
+.screen.active{display:block}
+h1{font-size:26px;font-weight:800;letter-spacing:-.5px}
+h1 .dot{color:var(--accent)}
+.sub{color:var(--ink-dim);font-size:14px;margin-top:4px}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.iconbtn{background:var(--card);border:1px solid var(--line);color:var(--ink);
+  width:42px;height:42px;border-radius:12px;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.backbtn{background:none;border:none;color:var(--accent);font-size:16px;font-weight:600;cursor:pointer;padding:8px 0;margin-bottom:8px}
+.label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--ink-dim);margin:22px 0 10px}
+.seg{display:flex;background:var(--bg2);border-radius:14px;padding:4px;border:1px solid var(--line)}
+.seg button{flex:1;padding:12px 6px;border:none;background:none;color:var(--ink-dim);
+  font-size:15px;font-weight:700;border-radius:11px;cursor:pointer;transition:.15s}
+.seg button.on{background:var(--accent);color:#1a130d}
+.seg.tealset button.on{background:var(--teal);color:#0e1d1a}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tcard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px 14px;cursor:pointer;transition:.12s;min-height:92px;display:flex;flex-direction:column;justify-content:space-between}
+.tcard:active{transform:scale(.97);background:var(--card2)}
+.tcard .em{font-size:26px}
+.tcard .tt{font-weight:700;font-size:15px;margin-top:8px}
+.tcard .tr{color:var(--ink-dim);font-size:12px}
+/* Practice */
+.scenebox{background:var(--bg2);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px}
+.scenebox .ctx{color:var(--ink-dim);font-size:13px;font-style:italic}
+.dlg{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
+.bubble{max-width:88%;padding:12px 15px;border-radius:18px;font-size:16px;line-height:1.55}
+.bubble.them{background:var(--card);border:1px solid var(--line);align-self:flex-start;border-bottom-left-radius:6px}
+.bubble.you{background:var(--accent-soft);border:1px solid #5a3f2c;align-self:flex-end;border-bottom-right-radius:6px}
+.bubble .who{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink-dim);margin-bottom:4px}
+.blank{display:inline-block;min-width:64px;border-bottom:2px dashed var(--ink-dim);text-align:center;
+  padding:0 6px;margin:0 2px;color:var(--accent);font-weight:700;cursor:pointer;border-radius:6px 6px 0 0}
+.blank.filled{border-bottom:2px solid var(--accent)}
+.blank.ok{color:var(--teal);border-color:var(--teal)}
+.blank.bad{color:var(--red);border-color:var(--red);animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.pool{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;padding:16px 0}
+.chip{background:var(--card);border:1px solid var(--line);color:var(--ink);
+  padding:11px 18px;border-radius:999px;font-size:16px;font-weight:600;cursor:pointer;transition:.12s}
+.chip:active{transform:scale(.93)}
+.chip.used{opacity:.25;pointer-events:none}
+.feedback{border-radius:var(--radius);padding:16px;margin-top:14px;display:none}
+.feedback.show{display:block;animation:pop .25s}
+@keyframes pop{from{transform:scale(.95);opacity:0}}
+.feedback.win{background:var(--teal-soft);border:1px solid #2f5a52}
+.feedback .ttl{font-weight:800;margin-bottom:6px}
+.feedback .trtext{color:var(--ink-dim);font-size:14px}
+.btnrow{display:flex;gap:10px;margin-top:18px}
+.btn{flex:1;padding:15px;border-radius:14px;border:none;font-size:16px;font-weight:700;cursor:pointer}
+.btn.primary{background:var(--accent);color:#1a130d}
+.btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.progress{font-size:13px;color:var(--ink-dim);font-weight:600;margin-bottom:6px}
+/* Conversation */
+.chat{display:flex;flex-direction:column;gap:12px;padding-bottom:130px}
+.note{background:var(--teal-soft);border:1px solid #2f5a52;border-radius:12px;padding:10px 13px;
+  font-size:13.5px;color:#bfe3db;max-width:88%;align-self:flex-end}
+.note b{color:var(--teal)}
+.inputbar{position:fixed;bottom:0;left:0;right:0;background:var(--bg);
+  border-top:1px solid var(--line);padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+  display:flex;gap:10px;max-width:560px;margin:0 auto}
+.inputbar textarea{flex:1;background:var(--card);border:1px solid var(--line);color:var(--ink);
+  border-radius:14px;padding:12px 14px;font-size:16px;font-family:inherit;resize:none;height:48px;max-height:120px}
+.inputbar button{width:48px;height:48px;border-radius:14px;border:none;background:var(--accent);
+  color:#1a130d;font-size:20px;cursor:pointer;flex-shrink:0}
+.inputbar button:disabled{opacity:.4}
+.typing{color:var(--ink-dim);font-size:14px;font-style:italic}
+/* Settings modal */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;align-items:flex-end;justify-content:center}
+.modal.show{display:flex}
+.sheet{background:var(--bg2);border-radius:22px 22px 0 0;padding:24px 20px 36px;width:100%;max-width:560px;border-top:1px solid var(--line)}
+.sheet h2{font-size:19px;margin-bottom:14px}
+.sheet input{width:100%;background:var(--card);border:1px solid var(--line);color:var(--ink);
+  border-radius:12px;padding:13px;font-size:15px;margin-bottom:8px;font-family:monospace}
+.sheet .hint{font-size:13px;color:var(--ink-dim);margin-bottom:16px}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid var(--line);margin-top:14px}
+.switch{width:50px;height:30px;background:var(--card);border-radius:99px;border:1px solid var(--line);position:relative;cursor:pointer;transition:.2s}
+.switch.on{background:var(--teal)}
+.switch::after{content:"";position:absolute;width:24px;height:24px;background:#fff;border-radius:50%;top:2px;left:3px;transition:.2s}
+.switch.on::after{left:22px}
+.persona{display:flex;gap:10px;margin-bottom:14px}
+.persona .pcard{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;text-align:center}
+.persona .pcard.on{border-color:var(--accent);background:var(--accent-soft)}
+.persona .pcard .pe{font-size:24px}
+.persona .pcard .pn{font-weight:700;font-size:14px;margin-top:4px}
+.persona .pcard .pd{font-size:11.5px;color:var(--ink-dim)}
+.warn{background:var(--red-soft);border:1px solid #5a3434;border-radius:12px;padding:12px 14px;font-size:14px;margin-bottom:14px}
+</style>
+</head>
+<body>
+
+<!-- ======== HOME ======== -->
+<div class="screen active" id="scr-home">
+  <div class="topbar">
+    <div>
+      <h1>SpeakMate<span class="dot">.</span></h1>
+      <div class="sub">İngilizce konuşma pratiği</div>
+    </div>
+    <button class="iconbtn" onclick="openSettings()">⚙️</button>
+  </div>
+
+  <div class="label">Seviye</div>
+  <div class="seg" id="levelSeg">
+    <button data-lv="A2" onclick="setLevel('A2')">A2 · Temel</button>
+    <button data-lv="B1" class="on" onclick="setLevel('B1')">B1 · Orta</button>
+    <button data-lv="B2" onclick="setLevel('B2')">B2 · İyi</button>
+  </div>
+
+  <div class="label">Mod</div>
+  <div class="seg tealset" id="modeSeg">
+    <button data-md="practice" class="on" onclick="setMode('practice')">🧩 Practice</button>
+    <button data-md="chat" onclick="setMode('chat')">💬 Conversation</button>
+  </div>
+
+  <div class="label">Konu Seç</div>
+  <div class="cards" id="topicCards"></div>
+</div>
+
+<!-- ======== PRACTICE ======== -->
+<div class="screen" id="scr-practice">
+  <button class="backbtn" onclick="goHome()">‹ Ana ekran</button>
+  <div class="progress" id="pProgress"></div>
+  <div class="scenebox"><div class="ctx" id="pContext"></div></div>
+  <div class="dlg" id="pDialog"></div>
+  <div class="pool" id="pPool"></div>
+  <div class="feedback win" id="pFeedback">
+    <div class="ttl">✅ Harika!</div>
+    <div class="trtext" id="pTranslation"></div>
+  </div>
+  <div class="btnrow">
+    <button class="btn ghost" onclick="resetExercise()">↺ Tekrar</button>
+    <button class="btn primary" id="pNext" onclick="nextExercise()" style="display:none">Sonraki →</button>
+  </div>
+</div>
+
+<!-- ======== CONVERSATION ======== -->
+<div class="screen" id="scr-chat">
+  <button class="backbtn" onclick="goHome()">‹ Ana ekran</button>
+  <div class="persona" id="personaRow">
+    <div class="pcard on" data-p="friendly" onclick="setPersona('friendly')">
+      <div class="pe">🙂</div><div class="pn">Friendly</div><div class="pd">Yavaş, net, anlayışlı</div>
+    </div>
+    <div class="pcard" data-p="native" onclick="setPersona('native')">
+      <div class="pe">🇺🇸</div><div class="pn">Native</div><div class="pd">Hızlı, doğal, deyimli</div>
+    </div>
+  </div>
+  <div class="chat" id="chatBox"></div>
+  <div class="inputbar">
+    <textarea id="chatInput" placeholder="Write in English..." rows="1"></textarea>
+    <button id="sendBtn" onclick="sendChat()">➤</button>
+  </div>
+</div>
+
+<!-- ======== SETTINGS ======== -->
+<div class="modal" id="settingsModal" onclick="if(event.target===this)closeSettings()">
+  <div class="sheet">
+    <h2>⚙️ Ayarlar</h2>
+    <div class="label" style="margin-top:0">Anthropic API Key</div>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-...">
+    <div class="hint">Conversation modu için gerekli. Key sadece bu cihazda saklanır, hiçbir yere gönderilmez (Anthropic hariç).</div>
+    <div class="toggle-row">
+      <div><b>💡 Hata düzeltme notları</b><div class="hint" style="margin:0">Her mesajından sonra kısa düzeltme önerisi</div></div>
+      <div class="switch on" id="corrSwitch" onclick="toggleCorr()"></div>
+    </div>
+    <div class="btnrow">
+      <button class="btn primary" onclick="saveSettings()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================== STATE ================== */
+let S = { level:'B1', mode:'practice', topic:null, persona:'friendly',
+          apiKey:'', corrections:true,
+          exIndex:0, blanks:[], currentBlank:0, chatHistory:[] };
+
+function store(k,v){ try{localStorage.setItem('sm_'+k,v)}catch(e){} }
+function load(k){ try{return localStorage.getItem('sm_'+k)||''}catch(e){return ''} }
+S.apiKey = load('key');
+S.corrections = load('corr')!=='off';
+
+/* ================== TOPICS ================== */
+const TOPICS = [
+  {id:'aboutme', em:'👤', en:'About Me', tr:'Kendini anlat'},
+  {id:'sports',  em:'🏋️', en:'Sports & Fitness', tr:'Spor'},
+  {id:'movies',  em:'🎬', en:'Movies & Series', tr:'Film & dizi'},
+  {id:'travel',  em:'✈️', en:'Travel & Abroad', tr:'Seyahat'},
+  {id:'work',    em:'💼', en:'Work & Career', tr:'İş hayatı'},
+  {id:'food',    em:'🍕', en:'Food & Eating Out', tr:'Yemek'},
+  {id:'smalltalk',em:'💬', en:'Small Talk', tr:'Sohbet açma'},
+  {id:'hobbies', em:'🎮', en:'Hobbies', tr:'Hobiler'},
+  {id:'shopping',em:'🛒', en:'Shopping', tr:'Alışveriş'},
+  {id:'opinions',em:'🗣️', en:'Opinions', tr:'Fikir belirtme'},
+];
+
+/* ================== PRACTICE DATA ==================
+   Her egzersiz: ctx (sahne), lines (them/you), you satırında ___ boşluklar,
+   answers: sıralı doğru kelimeler, extra: çeldiriciler, tr: Türkçe açıklama */
+const EX = {
+aboutme:{
+A2:[
+ {ctx:"Yeni tanıştığın biri sana kendini sorduruyor.",
+  lines:[{w:'them',t:"So, tell me a little about yourself!"},
+         {w:'you',t:"I'm an ___ and I ___ in Ankara. I really ___ my job."}],
+  answers:['engineer','live','enjoy'], extra:['working','house','make'],
+  tr:"Mühendisim ve Ankara'da yaşıyorum. İşimi gerçekten seviyorum."},
+ {ctx:"Biri ailenizi soruyor.",
+  lines:[{w:'them',t:"Do you have a big family?"},
+         {w:'you',t:"Not really. I ___ with my family, and we are very ___ to each other."}],
+  answers:['live','close'], extra:['stay','near','far'],
+  tr:"Pek değil. Ailemle yaşıyorum ve birbirimize çok yakınız."}],
+B1:[
+ {ctx:"Yurt dışında bir etkinlikte kendini tanıtıyorsun.",
+  lines:[{w:'them',t:"Nice to meet you! What do you do for a living?"},
+         {w:'you',t:"I ___ as a design engineer. I've been in this field ___ about nine years, mostly ___ on defense projects."}],
+  answers:['work','for','working'], extra:['do','since','making'],
+  tr:"Tasarım mühendisi olarak çalışıyorum. Bu alanda yaklaşık dokuz yıldır, çoğunlukla savunma projelerinde çalışıyorum."},
+ {ctx:"Sohbet derinleşiyor, hayatından bahsediyorsun.",
+  lines:[{w:'them',t:"What do you usually do in your free time?"},
+         {w:'you',t:"I'm really ___ technology. I like building small tools, and I also ___ time with my plants — it helps me ___."}],
+  answers:['into','spend','relax'], extra:['interest','pass','sleep'],
+  tr:"Teknolojiye çok meraklıyım. Küçük araçlar yapmayı severim, bitkilerimle de vakit geçiririm — rahatlamamı sağlıyor."}],
+B2:[
+ {ctx:"Yeni tanıştığın biri kariyer yolculuğunu merak ediyor.",
+  lines:[{w:'them',t:"That sounds interesting. How did you end up in that career?"},
+         {w:'you',t:"To be ___, it wasn't planned. I ___ up taking a job in automotive, and one thing ___ to another. Looking ___, I wouldn't change a thing."}],
+  answers:['honest','ended','led','back'], extra:['true','finished','went','behind'],
+  tr:"Açıkçası planlı değildi. Otomotivde bir işe girdim, sonra her şey birbirini izledi. Geriye dönüp bakınca hiçbir şeyi değiştirmezdim."},
+ {ctx:"Biri seni daha yakından tanımak istiyor.",
+  lines:[{w:'them',t:"How would your friends describe you?"},
+         {w:'you',t:"They'd probably say I'm a bit of a ___ — I can't leave a problem ___ until I figure it out. I ___ myself on being reliable, though."}],
+  answers:['perfectionist','alone','pride'], extra:['perfect','away','proud'],
+  tr:"Muhtemelen biraz mükemmeliyetçi olduğumu söylerlerdi — bir problemi çözene kadar bırakamam. Yine de güvenilir olmamla gurur duyarım."}]
+},
+sports:{
+A2:[
+ {ctx:"Bir arkadaşın spor alışkanlıklarını soruyor.",
+  lines:[{w:'them',t:"Do you do any sports?"},
+         {w:'you',t:"Yes, I ___ to the gym three ___ a week. I usually go ___ work."}],
+  answers:['go','times','after'], extra:['do','days','later'],
+  tr:"Evet, haftada üç kez spor salonuna giderim. Genelde işten sonra giderim."}],
+B1:[
+ {ctx:"Spor salonunda biriyle sohbet ediyorsun.",
+  lines:[{w:'them',t:"You look like you train seriously. What's your routine?"},
+         {w:'you',t:"I try to ___ out four times a week. I focus on ___ training, but I've been ___ more cardio lately."}],
+  answers:['work','strength','adding'], extra:['take','strong','putting'],
+  tr:"Haftada dört kez antrenman yapmaya çalışıyorum. Kuvvet antrenmanına odaklanıyorum ama son zamanlarda daha fazla kardiyo ekliyorum."},
+ {ctx:"Maç hakkında konuşuyorsunuz.",
+  lines:[{w:'them',t:"Did you watch the match last night?"},
+         {w:'you',t:"I ___ the first half, but I fell asleep. I heard we ___ in the last minute — what a ___!"}],
+  answers:['caught','scored','game'], extra:['took','shot','play'],
+  tr:"İlk yarıyı izledim ama uyuyakaldım. Son dakikada gol attığımızı duydum — ne maçtı ama!"}],
+B2:[
+ {ctx:"Antrenman felsefesi hakkında derin bir sohbet.",
+  lines:[{w:'them',t:"Do you think motivation is the key to staying fit?"},
+         {w:'you',t:"Honestly, motivation comes and ___. What really matters is ___ — showing up even when you don't ___ like it. That's what separates results from ___."}],
+  answers:['goes','discipline','feel','excuses'], extra:['leaves','exercise','want','reasons'],
+  tr:"Açıkçası motivasyon gelip geçer. Asıl önemli olan disiplin — canın istemese bile gitmek. Sonuçları bahanelerden ayıran şey bu."}]
+},
+movies:{
+A2:[
+ {ctx:"Bir arkadaşına izlediğin filmi anlatıyorsun.",
+  lines:[{w:'them',t:"Have you seen anything good lately?"},
+         {w:'you',t:"Yes! I ___ a great movie last week. It was ___ a scientist. You ___ watch it!"}],
+  answers:['watched','about','should'], extra:['looked','for','must'],
+  tr:"Evet! Geçen hafta harika bir film izledim. Bir bilim insanı hakkındaydı. İzlemelisin!"}],
+B1:[
+ {ctx:"Bir film hakkında fikrini söylüyorsun.",
+  lines:[{w:'them',t:"What did you think of the ending?"},
+         {w:'you',t:"To be honest, I didn't ___ it coming. The plot ___ in the middle was clever, but the ending felt a bit ___ to me."}],
+  answers:['see','twist','rushed'], extra:['look','turn','fast'],
+  tr:"Açıkçası bunun geleceğini görmedim. Ortadaki olay örgüsü dönüşü zekiceydi ama son bana biraz aceleye gelmiş geldi."},
+ {ctx:"Dizi öneriyorsun.",
+  lines:[{w:'them',t:"I need a new series. Any recommendations?"},
+         {w:'you',t:"You should ___ out that new sci-fi show. The first episode is slow, but it really ___ up after that. I ___ the whole season in two days."}],
+  answers:['check','picks','finished'], extra:['look','goes','watched'],
+  tr:"Şu yeni bilim kurgu dizisine bakmalısın. İlk bölüm yavaş ama sonrasında gerçekten hızlanıyor. Bütün sezonu iki günde bitirdim."}],
+B2:[
+ {ctx:"Bir filmin neden etkileyici olduğunu anlatıyorsun.",
+  lines:[{w:'them',t:"Why do you like that director so much?"},
+         {w:'you',t:"His films really ___ with me. He doesn't ___ everything out for the audience — he trusts you to read between the ___. Every scene feels ___."}],
+  answers:['resonate','spell','lines','intentional'], extra:['connect','write','words','meaningful'],
+  tr:"Filmleri bende gerçekten yankı buluyor. Her şeyi seyirciye tek tek açıklamıyor — satır aralarını okuyabileceğine güveniyor. Her sahne bilinçli hissettiriyor."}]
+},
+travel:{
+A2:[
+ {ctx:"Havalimanında check-in yapıyorsun.",
+  lines:[{w:'them',t:"Good morning! Where are you flying today?"},
+         {w:'you',t:"Good morning. I'm ___ to London. Here is my ___. I have one ___ to check in."}],
+  answers:['flying','passport','bag'], extra:['going','ticket','luggage'],
+  tr:"Günaydın. Londra'ya uçuyorum. İşte pasaportum. Vereceğim bir çantam var."}],
+B1:[
+ {ctx:"Otelde resepsiyonda sorun yaşıyorsun.",
+  lines:[{w:'them',t:"Good evening, how can I help you?"},
+         {w:'you',t:"Hi, I have a ___ under the name Demir, but it seems there's been a ___. I booked a room with a city ___, not a parking lot."}],
+  answers:['reservation','mistake','view'], extra:['registration','problem','window'],
+  tr:"Merhaba, Demir adına rezervasyonum var ama bir hata olmuş görünüyor. Şehir manzaralı oda ayırtmıştım, otopark manzaralı değil."},
+ {ctx:"Yolda birine yol soruyorsun.",
+  lines:[{w:'them',t:"You look a bit lost — can I help?"},
+         {w:'you',t:"Yes, please! I'm trying to ___ to the train station. Is it ___ distance, or should I ___ a taxi?"}],
+  answers:['get','walking','take'], extra:['go','near','call'],
+  tr:"Evet lütfen! Tren istasyonuna ulaşmaya çalışıyorum. Yürüme mesafesinde mi, yoksa taksi mi tutmalıyım?"}],
+B2:[
+ {ctx:"Uçakta yanındaki yolcuyla sohbet.",
+  lines:[{w:'them',t:"Is this your first time visiting?"},
+         {w:'you',t:"Actually, yes. I've been ___ to make this trip for years, but something always ___ up. I finally decided to just ___ the bullet and book it."}],
+  answers:['meaning','came','bite'], extra:['wanting','showed','take'],
+  tr:"Aslında evet. Yıllardır bu seyahati yapmayı düşünüyordum ama hep bir şey çıkıyordu. Sonunda dişimi sıkıp rezervasyonu yaptım."}]
+},
+work:{
+A2:[
+ {ctx:"Biri işini soruyor.",
+  lines:[{w:'them',t:"What is your job?"},
+         {w:'you',t:"I am an engineer. I ___ in a big company. My work is ___ but I ___ it."}],
+  answers:['work','difficult','like'], extra:['stay','heavy','love'],
+  tr:"Mühendisim. Büyük bir şirkette çalışıyorum. İşim zor ama seviyorum."}],
+B1:[
+ {ctx:"İş görüşmesinde güçlü yönlerini anlatıyorsun.",
+  lines:[{w:'them',t:"What would you say is your biggest strength?"},
+         {w:'you',t:"I'd say it's problem ___. When something goes wrong, I stay ___ and break the issue into smaller parts ___ of panicking."}],
+  answers:['solving','calm','instead'], extra:['making','quiet','rather'],
+  tr:"Problem çözme derdim. Bir şeyler ters gittiğinde panik yapmak yerine sakin kalır ve sorunu küçük parçalara bölerim."},
+ {ctx:"Yabancı bir meslektaşla proje konuşuyorsun.",
+  lines:[{w:'them',t:"How is the project going on your side?"},
+         {w:'you',t:"We're on ___, mostly. There was a small ___ with the supplier last week, but we managed to ___ it without affecting the deadline."}],
+  answers:['track','issue','solve'], extra:['time','mistake','fix'],
+  tr:"Çoğunlukla planlandığı gibi gidiyor. Geçen hafta tedarikçiyle küçük bir sorun oldu ama termin tarihini etkilemeden çözmeyi başardık."}],
+B2:[
+ {ctx:"Kariyer hedeflerini anlatıyorsun.",
+  lines:[{w:'them',t:"Where do you see yourself in five years?"},
+         {w:'you',t:"I'd like to take on more ___, ideally leading a team. I feel I've built a solid technical ___, and the next logical step is ___ others grow while staying ___ in the engineering side."}],
+  answers:['responsibility','foundation','helping','involved'], extra:['jobs','base','making','interested'],
+  tr:"Daha fazla sorumluluk almak isterim, ideali bir ekip yönetmek. Sağlam bir teknik temel oluşturduğumu düşünüyorum; mantıklı sonraki adım, mühendislik tarafında kalmaya devam ederken başkalarının gelişmesine yardım etmek."}]
+},
+food:{
+A2:[
+ {ctx:"Restoranda sipariş veriyorsun.",
+  lines:[{w:'them',t:"Are you ready to order?"},
+         {w:'you',t:"Yes, please. I ___ like the chicken, and a glass of water. Can I also ___ the bill ___?"}],
+  answers:['would','have','later'], extra:['will','take','after'],
+  tr:"Evet lütfen. Tavuk istiyorum ve bir bardak su. Hesabı da sonra alabilir miyim?"}],
+B1:[
+ {ctx:"Arkadaşına bir restoran öneriyorsun.",
+  lines:[{w:'them',t:"Do you know a good place around here?"},
+         {w:'you',t:"There's a small place nearby that ___ amazing kebab. It doesn't look ___ from outside, but trust me, it's ___ the visit."}],
+  answers:['serves','fancy','worth'], extra:['makes','beautiful','good'],
+  tr:"Yakında harika kebap yapan küçük bir yer var. Dışarıdan şık görünmüyor ama inan bana, gitmeye değer."}],
+B2:[
+ {ctx:"Yemek kültürü hakkında konuşuyorsunuz.",
+  lines:[{w:'them',t:"What's Turkish food like? I've never tried it."},
+         {w:'you',t:"You're seriously ___ out. It's incredibly diverse — every region has its own ___. If you ever visit, don't ___ for the touristy places; the best food is in spots only ___ know."}],
+  answers:['missing','specialty','settle','locals'], extra:['losing','food','look','people'],
+  tr:"Cidden çok şey kaçırıyorsun. İnanılmaz çeşitli — her bölgenin kendi spesiyali var. Gelirsen turistik yerlerle yetinme; en iyi yemekler sadece yerlilerin bildiği yerlerde."}]
+},
+smalltalk:{
+A2:[
+ {ctx:"Asansörde komşunla karşılaştın.",
+  lines:[{w:'them',t:"Hi! How are you today?"},
+         {w:'you',t:"I'm fine, ___ you. The weather is very ___ today, isn't ___?"}],
+  answers:['thank','nice','it'], extra:['thanks','good','that'],
+  tr:"İyiyim, teşekkürler. Bugün hava çok güzel, değil mi?"}],
+B1:[
+ {ctx:"Bir etkinlikte tanımadığın biriyle sohbet başlatıyorsun.",
+  lines:[{w:'them',t:"(standing alone near the coffee)"},
+         {w:'you',t:"Hi there! Quite a ___ event, isn't it? I'm Mustafa, by the ___. Have you ___ to one of these before?"}],
+  answers:['crowded','way','been'], extra:['full','side','gone'],
+  tr:"Merhaba! Oldukça kalabalık bir etkinlik, değil mi? Bu arada ben Mustafa. Daha önce bunlardan birine geldin mi?"}],
+B2:[
+ {ctx:"Sohbeti nazikçe bitirmen gerekiyor.",
+  lines:[{w:'them',t:"...and that's why I think the market will recover soon."},
+         {w:'you',t:"That's a really interesting ___. Listen, it's been great ___ to you — I should probably ___ the rounds a bit, but let's ___ in touch."}],
+  answers:['perspective','talking','make','keep'], extra:['idea','speaking','do','stay'],
+  tr:"Gerçekten ilginç bir bakış açısı. Seninle konuşmak çok güzeldi — biraz ortamı dolaşsam iyi olur ama irtibatta kalalım."}]
+},
+hobbies:{
+A2:[
+ {ctx:"Hobilerini anlatıyorsun.",
+  lines:[{w:'them',t:"What do you like doing on weekends?"},
+         {w:'you',t:"I like ___ care of my plants. I also ___ small computer programs. It is fun ___ me."}],
+  answers:['taking','write','for'], extra:['making','do','to'],
+  tr:"Bitkilerime bakmayı seviyorum. Ayrıca küçük bilgisayar programları yazıyorum. Benim için eğlenceli."}],
+B1:[
+ {ctx:"Tutkulu olduğun bir hobinden bahsediyorsun.",
+  lines:[{w:'them',t:"You mentioned you build things — what kind?"},
+         {w:'you',t:"I build small web tools as a hobby. It started as a way to ___ time, but now I'm completely ___ on it. There's something satisfying about ___ an idea come to life."}],
+  answers:['kill','hooked','watching'], extra:['spend','stuck','looking'],
+  tr:"Hobi olarak küçük web araçları yapıyorum. Vakit geçirmek için başladı ama artık tamamen bağımlısıyım. Bir fikrin hayata geçmesini izlemekte tatmin edici bir şey var."}],
+B2:[
+ {ctx:"Hobilerin hayatına etkisini anlatıyorsun.",
+  lines:[{w:'them',t:"Do you think hobbies actually matter that much?"},
+         {w:'you',t:"Absolutely. They keep me ___ outside of work. When everything ___ around deadlines, having something you do purely for ___ keeps you sane. It's not wasted time — it's how I ___."}],
+  answers:['grounded','revolves','pleasure','recharge'], extra:['busy','turns','fun','rest'],
+  tr:"Kesinlikle. İş dışında dengede kalmamı sağlıyorlar. Her şey terminler etrafında dönerken sırf keyif için yaptığın bir şeyin olması akıl sağlığını koruyor. Boşa geçen zaman değil — böyle şarj oluyorum."}]
+},
+shopping:{
+A2:[
+ {ctx:"Mağazada ayakkabı bakıyorsun.",
+  lines:[{w:'them',t:"Can I help you with anything?"},
+         {w:'you',t:"Yes, do you ___ these in size 43? And how ___ are they? Can I ___ them on?"}],
+  answers:['have','much','try'], extra:['get','many','put'],
+  tr:"Evet, bunların 43 numarası var mı? Ve fiyatı ne kadar? Deneyebilir miyim?"}],
+B1:[
+ {ctx:"Aldığın ürünü iade etmek istiyorsun.",
+  lines:[{w:'them',t:"Hi, how can I help you today?"},
+         {w:'you',t:"Hi, I'd like to ___ this jacket. I bought it last week but it doesn't ___ properly. Here's the ___."}],
+  answers:['return','fit','receipt'], extra:['give','wear','paper'],
+  tr:"Merhaba, bu ceketi iade etmek istiyorum. Geçen hafta aldım ama tam oturmuyor. İşte fişi."}],
+B2:[
+ {ctx:"Pazarlık yapıyorsun.",
+  lines:[{w:'them',t:"This one is 200 euros — it's genuine leather."},
+         {w:'you',t:"It's nice, but that's a bit ___ my budget. I noticed a small ___ on the side, too. Would you be ___ to do 150? Otherwise I might have to ___ on it."}],
+  answers:['beyond','scratch','willing','pass'], extra:['over','line','ready','give'],
+  tr:"Güzel ama bütçemi biraz aşıyor. Yan tarafında küçük bir çizik de fark ettim. 150'ye olur mu? Yoksa vazgeçmek zorunda kalabilirim."}]
+},
+opinions:{
+A2:[
+ {ctx:"Basit bir konuda fikrini söylüyorsun.",
+  lines:[{w:'them',t:"Do you like living in a big city?"},
+         {w:'you',t:"Yes and no. Big cities are ___, but they are also very ___. I think small cities are more ___."}],
+  answers:['exciting','crowded','quiet'], extra:['excited','crowd','silent'],
+  tr:"Hem evet hem hayır. Büyük şehirler heyecan verici ama çok da kalabalık. Bence küçük şehirler daha sakin."}],
+B1:[
+ {ctx:"Bir tartışmada görüşünü savunuyorsun.",
+  lines:[{w:'them',t:"Some people say remote work is bad for teamwork. What do you think?"},
+         {w:'you',t:"I see their ___, but I don't fully ___. In my experience, good communication ___ on the people, not the office. A bad team is bad ___ too."}],
+  answers:['point','agree','depends','in-person'], extra:['idea','accept','based','online'],
+  tr:"Ne demek istediklerini anlıyorum ama tamamen katılmıyorum. Tecrübeme göre iyi iletişim ofise değil insanlara bağlı. Kötü bir ekip yüz yüze de kötüdür."}],
+B2:[
+ {ctx:"Nazikçe karşı çıkıyorsun.",
+  lines:[{w:'them',t:"AI will replace most engineers within ten years, don't you think?"},
+         {w:'you',t:"I'd push ___ on that a little. AI is a powerful tool, but engineering isn't just calculation — it's judgment, ___-offs, and responsibility. Tools ___ the work; they don't ___ the thinker."}],
+  answers:['back','trade','reshape','replace'], extra:['away','take','change','remove'],
+  tr:"Buna biraz itiraz ederim. Yapay zekâ güçlü bir araç ama mühendislik sadece hesap değil — muhakeme, ödünleşimler ve sorumluluk. Araçlar işi yeniden şekillendirir; düşüneni yerinden etmez."}]
+}
+};
+
+/* ================== HOME ================== */
+function renderTopics(){
+  const c = document.getElementById('topicCards');
+  c.innerHTML = TOPICS.map(t=>
+    `<div class="tcard" onclick="pickTopic('${t.id}')">
+       <div class="em">${t.em}</div>
+       <div><div class="tt">${t.en}</div><div class="tr">${t.tr}</div></div>
+     </div>`).join('');
+}
+function setLevel(lv){ S.level=lv;
+  document.querySelectorAll('#levelSeg button').forEach(b=>b.classList.toggle('on',b.dataset.lv===lv)); }
+function setMode(md){ S.mode=md;
+  document.querySelectorAll('#modeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.md===md)); }
+function pickTopic(id){
+  S.topic=id; S.exIndex=0;
+  if(S.mode==='practice'){ show('scr-practice'); loadExercise(); }
+  else { show('scr-chat'); startChat(); }
+}
+function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
+function goHome(){ show('scr-home'); }
+
+/* ================== PRACTICE ================== */
+let curEx=null;
+function getExList(){ return (EX[S.topic] && EX[S.topic][S.level]) || []; }
+function loadExercise(){
+  const list=getExList();
+  if(!list.length){ alert('Bu konu/seviye için egzersiz yakında!'); goHome(); return; }
+  if(S.exIndex>=list.length) S.exIndex=0;
+  curEx=list[S.exIndex];
+  document.getElementById('pProgress').textContent=
+    `${TOPICS.find(t=>t.id===S.topic).en} · ${S.level} · ${S.exIndex+1}/${list.length}`;
+  document.getElementById('pContext').textContent=curEx.ctx;
+  document.getElementById('pFeedback').classList.remove('show');
+  document.getElementById('pNext').style.display='none';
+  S.blanks=[]; S.currentBlank=0;
+  // build dialog
+  let blankIdx=0;
+  const dlg=document.getElementById('pDialog');
+  dlg.innerHTML=curEx.lines.map(l=>{
+    let html=l.t;
+    if(l.w==='you'){
+      html=l.t.replace(/___/g,()=>`<span class="blank" data-i="${blankIdx++}" onclick="unfill(this)">&nbsp;</span>`);
+    }
+    return `<div class="bubble ${l.w}"><div class="who">${l.w==='you'?'You':'Them'}</div>${html}</div>`;
+  }).join('');
+  // pool: answers + extras shuffled
+  const words=[...curEx.answers.map((w,i)=>({w,a:true})), ...curEx.extra.map(w=>({w,a:false}))];
+  for(let i=words.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[words[i],words[j]]=[words[j],words[i]];}
+  document.getElementById('pPool').innerHTML=
+    words.map((o,i)=>`<button class="chip" data-w="${o.w}" onclick="placeWord(this)">${o.w}</button>`).join('');
+}
+function placeWord(chip){
+  const blanks=[...document.querySelectorAll('.blank')];
+  const target=blanks.find(b=>!b.classList.contains('filled'));
+  if(!target) return;
+  const i=+target.dataset.i;
+  const word=chip.dataset.w;
+  target.textContent=word; target.classList.add('filled');
+  if(word===curEx.answers[i]){
+    target.classList.add('ok'); chip.classList.add('used'); target.onclick=null;
+    if(blanks.every(b=>b.classList.contains('ok'))) win();
+  } else {
+    target.classList.add('bad');
+    setTimeout(()=>{ target.textContent='\u00A0'; target.classList.remove('filled','bad'); },600);
+  }
+}
+function unfill(){}
+function win(){
+  document.getElementById('pTranslation').textContent='🇹🇷 '+curEx.tr;
+  document.getElementById('pFeedback').classList.add('show');
+  document.getElementById('pNext').style.display='block';
+}
+function resetExercise(){ loadExercise(); }
+function nextExercise(){
+  S.exIndex++;
+  const list=getExList();
+  if(S.exIndex>=list.length){
+    S.exIndex=0;
+    alert('🎉 Bu konunun tüm egzersizlerini bitirdin! Baştan başlıyor.');
+  }
+  loadExercise();
+}
+
+/* ================== CONVERSATION ================== */
+function setPersona(p){ S.persona=p;
+  document.querySelectorAll('.pcard').forEach(c=>c.classList.toggle('on',c.dataset.p===p)); }
+function startChat(){
+  S.chatHistory=[];
+  const box=document.getElementById('chatBox');
+  const t=TOPICS.find(t=>t.id===S.topic);
+  box.innerHTML='';
+  if(!S.apiKey){
+    box.innerHTML=`<div class="warn">⚠️ Conversation modu için API key gerekli. Sağ üstteki ⚙️ ayarlardan ekleyebilirsin.<br><br>Key'in yoksa: <b>console.anthropic.com</b> → API Keys → Create Key</div>`;
+    return;
+  }
+  const opener = S.persona==='native'
+    ? `Hey! So I heard you're into ${t.en.toLowerCase()}. What's the deal — tell me about it!`
+    : `Hello! I'd love to talk about ${t.en.toLowerCase()} with you. Shall we start? Tell me something about it.`;
+  addBubble('them',opener);
+  S.chatHistory.push({role:'assistant',content:opener});
+}
+function addBubble(who,text){
+  const box=document.getElementById('chatBox');
+  const d=document.createElement('div');
+  d.className='bubble '+who;
+  d.innerHTML=`<div class="who">${who==='you'?'You':'Partner'}</div>${escapeHtml(text)}`;
+  box.appendChild(d);
+  window.scrollTo(0,document.body.scrollHeight);
+  return d;
+}
+function addNote(text){
+  const box=document.getElementById('chatBox');
+  const d=document.createElement('div');
+  d.className='note';
+  d.innerHTML=`<b>💡 Tip:</b> ${escapeHtml(text)}`;
+  box.appendChild(d);
+}
+function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function sendChat(){
+  const inp=document.getElementById('chatInput');
+  const msg=inp.value.trim();
+  if(!msg||!S.apiKey) return;
+  inp.value='';
+  addBubble('you',msg);
+  S.chatHistory.push({role:'user',content:msg});
+  const btn=document.getElementById('sendBtn'); btn.disabled=true;
+  const typing=addBubble('them','...'); typing.classList.add('typing');
+
+  const t=TOPICS.find(t=>t.id===S.topic);
+  const personaDesc = S.persona==='native'
+    ? "You are a friendly native English speaker from the US. Speak naturally with everyday idioms and contractions. Normal speed conversation."
+    : "You are a friendly, patient conversation partner. Use clear, simple English. Be encouraging.";
+  const corrPart = S.corrections
+    ? `\nAfter your reply, if the user's last message had any English mistakes or could sound more natural, add ONE short tip on a new line starting with "TIP:" (in simple English, max 15 words, e.g. TIP: Say "I have been living" instead of "I am living since"). If their English was fine, don't add a TIP line.`
+    : '';
+  const system = `${personaDesc} You are helping a Turkish adult practice English conversation. Current topic: ${t.en}. User level: ${S.level}. Keep replies short (2-3 sentences) and always end with a question to keep the conversation going. Stay in character as a conversation partner, not a teacher.${corrPart}`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':S.apiKey,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:300,
+        system:system,
+        messages:S.chatHistory
+      })
+    });
+    if(!res.ok){
+      const err=await res.json().catch(()=>({}));
+      throw new Error(err.error?.message||('HTTP '+res.status));
+    }
+    const data=await res.json();
+    let text=data.content[0].text;
+    let tip=null;
+    const m=text.match(/\nTIP:\s*([\s\S]*)$/);
+    if(m){ tip=m[1].trim(); text=text.replace(/\nTIP:[\s\S]*$/,'').trim(); }
+    typing.remove();
+    addBubble('them',text);
+    S.chatHistory.push({role:'assistant',content:data.content[0].text});
+    if(tip&&S.corrections) addNote(tip);
+  }catch(e){
+    typing.remove();
+    addBubble('them','⚠️ Bağlantı hatası: '+e.message+' — Key doğru mu? İnternet var mı?');
+    S.chatHistory.pop();
+  }
+  btn.disabled=false;
+  window.scrollTo(0,document.body.scrollHeight);
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey&&document.activeElement.id==='chatInput'){
+    e.preventDefault(); sendChat();
+  }
+});
+
+/* ================== SETTINGS ================== */
+function openSettings(){
+  document.getElementById('apiKeyInput').value=S.apiKey;
+  document.getElementById('corrSwitch').classList.toggle('on',S.corrections);
+  document.getElementById('settingsModal').classList.add('show');
+}
+function closeSettings(){ document.getElementById('settingsModal').classList.remove('show'); }
+function toggleCorr(){ S.corrections=!S.corrections;
+  document.getElementById('corrSwitch').classList.toggle('on',S.corrections); }
+function saveSettings(){
+  S.apiKey=document.getElementById('apiKeyInput').value.trim();
+  store('key',S.apiKey); store('corr',S.corrections?'on':'off');
+  closeSettings();
+  if(S.mode==='chat'&&document.getElementById('scr-chat').classList.contains('active')) startChat();
+}
+
+renderTopics();
+</script>
+</body>
+</html>
